@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan de Entrenamiento Interactivo - Sebastián Díaz Gallardo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The structure is a single-page, scrollable dashboard with a sticky navigation bar. The key interaction is a "Phase Selector" (Buttons: Phase 1, Phase 2, Phase 3) in the "Plan de Entrenamiento" section. This selector dynamically updates the displayed weekly workout schedule. Users can then click on a specific day to see the detailed minute-by-minute routine. This hierarchical drill-down approach (Phase -> Week -> Day) makes the complex plan easy to navigate and prevents information overload. Sections will be clearly demarcated for "Safety," "Workout Plan," "Science," and "Progress," allowing the user to focus on their immediate task (today's workout) while having easy access to background information. This structure was chosen because it transforms a linear report into a task-oriented, interactive tool, which is more engaging and useful for a single user like Sebastian. -->
+    <!-- Visualization & Content Choices: 
+        - User Profile (Inform): Displayed as static text cards for clarity.
+        - Post-Op Guidelines (Organize): HTML/CSS accordion to make the dense safety info digestible. Goal: Emphasize safety. Interaction: Click to expand/collapse.
+        - Workout Plan (Organize/Inform): Interactive Phase Selector (buttons) controlling a dynamic display of workout cards. Goal: Make the multi-phase plan easy to navigate. Interaction: Click phase button -> update weekly view -> click day card -> show detailed routine.
+        - Workout Structure (Compare/Inform): A dynamic horizontal stacked bar chart (Chart.js/Canvas) will visualize the duration of Warmup, Main, and Cooldown for the selected day's workout. Goal: Quick visual understanding of the session's structure. Interaction: Updates automatically when a day is selected. Tooltips on hover for details.
+        - Progression Visualization (Change): A line chart (Chart.js/Canvas) in the "Progress" section will show weight over time. Initially populated with his starting weight. Goal: Motivate by visualizing progress. Interaction: Static display, but designed for future dynamic updates.
+        - Scientific Concepts (Organize): HTML/CSS accordions for topics like HIIT vs. LISS. Goal: Present detailed text without cluttering the UI. Interaction: Click to expand/collapse.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F7F4;
+            color: #4A4A4A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 250px;
+            max-height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 300px;
+                max-height: 350px;
+            }
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .accordion-button.active .accordion-arrow {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <span class="text-xl font-bold text-[#8A817C]">Plan de Entrenamiento</span>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#perfil" class="text-gray-600 hover:bg-[#8A817C]/20 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Perfil y Seguridad</a>
+                        <a href="#plan" class="text-gray-600 hover:bg-[#8A817C]/20 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Plan de Entrenamiento</a>
+                        <a href="#ciencia" class="text-gray-600 hover:bg-[#8A817C]/20 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Ciencia y Estrategia</a>
+                        <a href="#progreso" class="text-gray-600 hover:bg-[#8A817C]/20 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Progreso</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <section id="perfil" class="mb-16">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Bienvenido, Sebastián</h1>
+                <p class="mt-2 text-lg text-gray-600">Tu camino personalizado hacia la pérdida de grasa y el rendimiento.</p>
+            </div>
+
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-8" role="alert">
+                <p class="font-bold">¡Atención! Seguridad Primero</p>
+                <p>Este plan comienza *después* de tu recuperación de la hernioplastia (finales de abril 2025) y una vez que tengas el alta médica. Consulta siempre a tu cirujano antes de iniciar o progresar en cualquier actividad física. El dolor es una señal para detenerse.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center mb-12">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="font-semibold text-gray-500">Peso Actual</h3>
+                    <p class="text-3xl font-bold text-[#8A817C]">88.6 <span class="text-lg">kg</span></p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="font-semibold text-gray-500">Altura</h3>
+                    <p class="text-3xl font-bold text-[#8A817C]">167 <span class="text-lg">cm</span></p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="font-semibold text-gray-500">IMC</h3>
+                    <p class="text-3xl font-bold text-[#8A817C]">31.6 <span class="text-lg">kg/m²</span></p>
+                    <p class="text-sm text-gray-500">(Obesidad Tipo 1)</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Guía Esencial Post-Hernioplastia</h2>
+                <p class="text-gray-600 mb-4">Tu recuperación es la prioridad. La siguiente tabla resume las pautas de ejercicio recomendadas después de tu cirugía. Sigue esta progresión cuidadosamente y siempre bajo supervisión médica.</p>
+                <div id="postOpAccordion"></div>
+            </div>
+        </section>
+
+        <section id="plan" class="mb-16">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">Tu Plan de Entrenamiento en Trotadora</h2>
+            <div class="flex justify-center space-x-2 md:space-x-4 mb-8">
+                <button id="btn-phase-1" class="phase-btn bg-[#8A817C] text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-[#6b625c] transition-colors">Fase 1</button>
+                <button id="btn-phase-2" class="phase-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-300 transition-colors">Fase 2</button>
+                <button id="btn-phase-3" class="phase-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-300 transition-colors">Fase 3</button>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="text-center mb-6">
+                    <h3 id="phase-title" class="text-2xl font-bold text-gray-800"></h3>
+                    <p id="phase-focus" class="text-gray-600 mt-1"></p>
+                </div>
+                <div id="workout-schedule" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                </div>
+            </div>
+
+            <div id="workout-detail-view" class="mt-8 bg-white p-6 rounded-xl shadow-lg hidden">
+                <h4 id="detail-day-title" class="text-xl font-bold text-gray-800 mb-4 text-center"></h4>
+                <div class="chart-container mb-6">
+                    <canvas id="workoutStructureChart"></canvas>
+                </div>
+                <div id="detail-steps" class="space-y-3"></div>
+            </div>
+        </section>
+
+        <section id="ciencia" class="mb-16">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">Ciencia y Estrategia</h2>
+            <div class="space-y-4 max-w-4xl mx-auto">
+                <div class="bg-white rounded-xl shadow-md">
+                    <button class="accordion-button w-full flex justify-between items-center text-left p-4 font-semibold text-gray-700 hover:bg-gray-50 rounded-t-xl">
+                        <span>Modalidades de Entrenamiento: LISS, MISS y HIIT</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-4 border-t text-gray-600">
+                            <p>Tu plan combina diferentes intensidades para maximizar resultados:
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li><strong>LISS (Baja Intensidad):</strong> Ideal para recuperación y construir una base aeróbica. Es de bajo impacto, perfecto para las fases iniciales.</li>
+                                    <li><strong>MISS (Moderada Intensidad):</strong> El punto medio, efectivo para quemar grasa y mejorar la resistencia cardiovascular.</li>
+                                    <li><strong>HIIT (Alta Intensidad):</strong> Ráfagas cortas e intensas que queman muchas calorías y aumentan tu metabolismo incluso después de entrenar (efecto EPOC). Se introduce en fases avanzadas.</li>
+                                </ul>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-md">
+                    <button class="accordion-button w-full flex justify-between items-center text-left p-4 font-semibold text-gray-700 hover:bg-gray-50 rounded-t-xl">
+                        <span>El Poder de la Inclinación</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-4 border-t text-gray-600">
+                            <p>Entrenar con inclinación es una herramienta clave para ti. Aumenta la intensidad y el gasto calórico sin necesidad de correr más rápido, lo que reduce el impacto en tus articulaciones. Además, activa más músculos de las piernas y glúteos. Es una forma segura y efectiva de progresar.</p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="bg-white rounded-xl shadow-md">
+                    <button class="accordion-button w-full flex justify-between items-center text-left p-4 font-semibold text-gray-700 hover:bg-gray-50 rounded-t-xl">
+                        <span>Cardio: ¿En Ayunas o Alimentado?</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-4 border-t text-gray-600">
+                            <p>La ciencia muestra que, aunque el cardio en ayunas puede quemar un poco más de grasa *durante* el ejercicio, la pérdida de peso total depende del déficit calórico general del día. La mejor opción es la que te permita entrenar con más energía y consistencia. Escucha a tu cuerpo: si te sientes bien entrenando en ayunas (especialmente en sesiones LISS), adelante. Si te sientes débil, es mejor comer algo ligero antes.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-md">
+                    <button class="accordion-button w-full flex justify-between items-center text-left p-4 font-semibold text-gray-700 hover:bg-gray-50 rounded-t-xl">
+                        <span>Neurociencia: Creando el Hábito</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-4 border-t text-gray-600">
+                            <p>La consistencia es más importante que la perfección. Tu cerebro forma hábitos a través de un ciclo de señal-rutina-recompensa. Cada entrenamiento completado libera dopamina, reforzando el hábito. Comienza con metas pequeñas y alcanzables (como en la Fase 1) para construir impulso. ¡Cada paso cuenta!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="progreso">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">Visualiza tu Progreso</h2>
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">Evolución del Peso Corporal</h3>
+                <p class="text-center text-gray-600 mb-6">Este gráfico te ayudará a visualizar tu progreso a lo largo del tiempo. ¡Cada punto es un paso hacia tu meta!</p>
+                <div class="chart-container">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white mt-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-gray-500">
+            <p>&copy; 2025 Plan de Entrenamiento Personalizado para Sebastián Díaz Gallardo. Diseñado con un enfoque en la seguridad y la ciencia.</p>
+        </div>
+    </footer>
+
+    <script>
+        const workoutData = {
+            phases: [
+                {
+                    id: 1,
+                    title: "Fase 1: Recuperación Fundamental y Resistencia",
+                    focus: "Semanas 1-4 Post-Alta Quirúrgica. Enfoque en movimiento de bajo impacto y sin dolor para reconstruir la base cardiovascular de forma segura.",
+                    schedule: {
+                        "Días 1, 3, 5": { 
+                            type: "LISS / Caminata Inclinada",
+                            duration: "30-40 min",
+                            details: [
+                                { part: "Calentamiento", time: 5, speed: "4.5 km/h", incline: "0°", rpe: "2-3" },
+                                { part: "Parte Principal (Semanas 1-2)", time: 20, speed: "5.0-5.5 km/h", incline: "1-3°", rpe: "3-4" },
+                                { part: "Parte Principal (Semanas 3-4)", time: 20, speed: "5.5-6.0 km/h", incline: "4-5°", rpe: "4-5" },
+                                { part: "Enfriamiento", time: 5, speed: "4.0 km/h", incline: "0°", rpe: "2" },
+                            ]
+                        },
+                        "Días 2, 4, 6": { 
+                            type: "Recuperación Activa",
+                            duration: "20-30 min",
+                            details: [
+                                { part: "Actividad", time: 30, speed: "N/A", incline: "N/A", rpe: "2", note: "Caminata ligera, estiramientos suaves o descanso completo. Escucha a tu cuerpo." },
+                            ]
+                        },
+                        "Día 7": { 
+                            type: "Descanso",
+                            duration: "Completo",
+                             details: [
+                                { part: "Actividad", time: 0, speed: "N/A", incline: "N/A", rpe: "1", note: "Descanso total para una recuperación óptima." },
+                            ]
+                        }
+                    }
+                },
+                {
+                    id: 2,
+                    title: "Fase 2: Intensidad y Resistencia Progresivas",
+                    focus: "Semanas 5-8 Post-Alta Quirúrgica. Introducción de intensidad moderada y trote muy ligero (siempre con autorización médica).",
+                    schedule: {
+                        "Día 1, 3": { 
+                            type: "MISS con Inclinación",
+                            duration: "35-50 min",
+                            details: [
+                                { part: "Calentamiento", time: 5, speed: "5.0 km/h", incline: "0°", rpe: "3" },
+                                { part: "Bloque 1", time: 10, speed: "5.5-6.5 km/h", incline: "6-8°", rpe: "5-6", note: "Caminata de potencia" },
+                                { part: "Bloque 2", time: 5, speed: "7.0-8.0 km/h", incline: "0-1°", rpe: "5-6", note: "Trote muy ligero (solo si autorizado y sin dolor)" },
+                                { part: "Repetir Bloques", time: 15, speed: "Variado", incline: "Variado", rpe: "5-6", note: "Alternar bloques 1 y 2" },
+                                { part: "Enfriamiento", time: 5, speed: "4.0 km/h", incline: "0°", rpe: "2" },
+                            ]
+                        },
+                        "Día 2, 4": { 
+                            type: "LISS / Caminata Larga",
+                            duration: "45-60 min",
+                            details: [
+                                { part: "Calentamiento", time: 5, speed: "4.5 km/h", incline: "0°", rpe: "2-3" },
+                                { part: "Parte Principal", time: 45, speed: "6.0-7.0 km/h", incline: "0-2°", rpe: "3-4", note: "Ritmo constante y conversacional" },
+                                { part: "Enfriamiento", time: 5, speed: "4.0 km/h", incline: "0°", rpe: "2" },
+                            ]
+                        },
+                         "Día 5": { 
+                            type: "Recuperación Activa",
+                            duration: "30-40 min",
+                            details: [
+                                 { part: "Actividad", time: 30, speed: "N/A", incline: "N/A", rpe: "2", note: "Bicicleta estática o caminata al aire libre." },
+                            ]
+                        },
+                        "Día 6, 7": { 
+                            type: "Descanso",
+                            duration: "Completo",
+                             details: [
+                                { part: "Actividad", time: 0, speed: "N/A", incline: "N/A", rpe: "1", note: "Descanso total." },
+                            ]
+                        }
+                    }
+                },
+                {
+                    id: 3,
+                    title: "Fase 3: Pérdida de Grasa Avanzada y Rendimiento",
+                    focus: "Semanas 9-12+ Post-Alta Quirúrgica. Integración de HIIT, mayores inclinaciones e intervalos de velocidad para maximizar resultados.",
+                     schedule: {
+                        "Día 1": { 
+                            type: "HIIT / Velocidad",
+                            duration: "25-30 min",
+                            details: [
+                                { part: "Calentamiento", time: 5, speed: "5.5-6.5 km/h", incline: "0°", rpe: "3-4" },
+                                { part: "Parte Principal (HIIT)", time: 16, speed: "8-12 km/h", incline: "8-10°", rpe: "8-9", note: "8x (60s trabajo / 60s recuperación caminando)" },
+                                { part: "Enfriamiento", time: 5, speed: "4.0 km/h", incline: "0°", rpe: "2" },
+                            ]
+                        },
+                        "Día 2, 4": { 
+                            type: "MISS / Resistencia Inclinada",
+                            duration: "40-50 min",
+                            details: [
+                                { part: "Calentamiento", time: 5, speed: "5.5-6.5 km/h", incline: "0°", rpe: "3-4" },
+                                { part: "Bloque 1", time: 10, speed: "7.0-8.0 km/h", incline: "4°", rpe: "5-6", note: "Tu ritmo base" },
+                                { part: "Bloque 2", time: 10, speed: "6.5-7.5 km/h", incline: "6-8°", rpe: "6-7" },
+                                { part: "Bloque 3", time: 10, speed: "8.5-9.5 km/h", incline: "2°", rpe: "7" },
+                                { part: "Enfriamiento", time: 5, speed: "4.0 km/h", incline: "0°", rpe: "2" },
+                            ]
+                        },
+                        "Día 3, 5": { 
+                            type: "LISS / Volumen Alto",
+                            duration: "50-60+ min",
+                            details: [
+                                { part: "Calentamiento", time: 5, speed: "5.0 km/h", incline: "0°", rpe: "2-3" },
+                                { part: "Parte Principal", time: 50, speed: "6.5-7.5 km/h", incline: "0-2°", rpe: "3-4", note: "Aumentar gasto calórico total" },
+                                { part: "Enfriamiento", time: 5, speed: "4.0 km/h", incline: "0°", rpe: "2" },
+                            ]
+                        },
+                        "Día 6": {
+                            type: "Recuperación Activa",
+                            duration: "30-45 min",
+                            details: [
+                                { part: "Actividad", time: 40, speed: "N/A", incline: "N/A", rpe: "2", note: "Bicicleta, caminata o estiramientos." },
+                            ]
+                        },
+                        "Día 7": { 
+                            type: "Descanso",
+                            duration: "Completo",
+                            details: [
+                                { part: "Actividad", time: 0, speed: "N/A", incline: "N/A", rpe: "1", note: "Descanso total para supercompensación." },
+                            ]
+                        }
+                    }
+                }
+            ],
+            postOpGuidelines: [
+                {
+                    phase: "Semanas 0-2: Recuperación Inicial",
+                    activities: "Reposo relativo. Caminata ligera y frecuente (15 min, 2x/día). Respiración diafragmática. Estiramientos suaves.",
+                    precautions: "PRIORIDAD: Proteger la zona. Evitar levantar >5kg, movimientos bruscos. Cero dolor."
+                },
+                {
+                    phase: "Semanas 2-4: Activación del Core",
+                    activities: "Caminata progresiva (hasta 30 min). Bicicleta estática (sin resistencia). Ejercicios de core de bajo impacto (puentes, planchas modificadas).",
+                    precautions: "Evitar crunches y contracciones agresivas de aductores. Continuar monitoreando el dolor."
+                },
+                {
+                    phase: "Semanas 4-8: Reintroducción Cardio Bajo Impacto",
+                    activities: "Caminata en trotadora (plana e inclinada). Aumento gradual en bici estática. Posible natación (si está cicatrizado).",
+                    precautions: "Consultar al cirujano antes de aumentar intensidad. Detenerse ante cualquier molestia."
+                },
+                {
+                    phase: "Semanas 8-12+: Retorno Gradual a Impacto Moderado",
+                    activities: "Trote ligero en trotadora (solo con autorización médica y sin dolor).",
+                    precautions: "Reevaluación por el cirujano es clave. Progresión lenta y controlada."
+                },
+                {
+                    phase: "Semanas 12+ y Más Allá: Actividad Completa",
+                    activities: "Retorno a deportes y pesas (solo con autorización explícita del cirujano).",
+                    precautions: "La calidad del tejido y la ausencia de dolor son determinantes. Mantener fortalecimiento del core."
+                }
+            ]
+        };
+
+        let workoutStructureChartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const phaseButtons = document.querySelectorAll('.phase-btn');
+            const workoutScheduleEl = document.getElementById('workout-schedule');
+            const phaseTitleEl = document.getElementById('phase-title');
+            const phaseFocusEl = document.getElementById('phase-focus');
+            const detailViewEl = document.getElementById('workout-detail-view');
+            const detailDayTitleEl = document.getElementById('detail-day-title');
+            const detailStepsEl = document.getElementById('detail-steps');
+
+            function displayWorkoutDetail(dayData) {
+                detailViewEl.classList.remove('hidden');
+                detailDayTitleEl.textContent = `${dayData.type} (${dayData.duration})`;
+                
+                let stepsHtml = '';
+                dayData.details.forEach(step => {
+                    stepsHtml += `<div class="border-l-4 p-3 rounded-r-lg bg-gray-50 flex items-start space-x-4">
+                        <div class="flex-shrink-0 w-24">
+                            <p class="font-bold text-gray-800">${step.part}</p>
+                            <p class="text-sm text-gray-500">${step.time > 0 ? step.time + ' min' : ''}</p>
+                        </div>
+                        <div class="flex-grow">
+                            <p class="text-gray-700">${step.note ? step.note : `Vel: ${step.speed}, Incl: ${step.incline}, RPE: ${step.rpe}`}</p>
+                        </div>
+                    </div>`;
+                });
+                detailStepsEl.innerHTML = stepsHtml;
+
+                const chartData = {
+                    labels: ['Componente'],
+                    datasets: []
+                };
+
+                let totalDuration = 0;
+                dayData.details.forEach(d => {
+                    if (d.part !== 'Actividad' && d.part !== 'Repetir Bloques') totalDuration += d.time;
+                });
+                
+                if (totalDuration > 0) {
+                    const colors = {
+                        'Calentamiento': 'rgba(70, 130, 180, 0.6)', // SteelBlue
+                        'Enfriamiento': 'rgba(176, 196, 222, 0.6)', // LightSteelBlue
+                        'default': 'rgba(138, 129, 124, 0.7)' // #8A817C
+                    };
+                    dayData.details.forEach(step => {
+                        if (step.time > 0 && step.part !== 'Repetir Bloques') {
+                            chartData.datasets.push({
+                                label: step.part,
+                                data: [step.time],
+                                backgroundColor: colors[step.part] || colors['default'],
+                                borderColor: colors[step.part] ? colors[step.part].replace('0.6', '1') : colors['default'].replace('0.7','1'),
+                                borderWidth: 1
+                            });
+                        }
+                    });
+                } else {
+                     chartData.datasets.push({
+                        label: 'Descanso / Recuperación',
+                        data: [1],
+                        backgroundColor: 'rgba(176, 196, 222, 0.6)',
+                        borderWidth: 1
+                    });
+                }
+                
+                updateWorkoutStructureChart(chartData);
+                detailViewEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            function updateWorkoutStructureChart(data) {
+                const ctx = document.getElementById('workoutStructureChart').getContext('2d');
+                if (workoutStructureChartInstance) {
+                    workoutStructureChartInstance.destroy();
+                }
+                workoutStructureChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: data,
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Estructura de la Sesión (minutos)'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.x !== null) {
+                                            label += `${context.parsed.x} min`;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: true,
+                                title: {
+                                    display: true,
+                                    text: 'Duración (minutos)'
+                                }
+                            },
+                            y: {
+                                stacked: true,
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+
+            function loadPhase(phaseId) {
+                const phase = workoutData.phases.find(p => p.id === phaseId);
+                if (!phase) return;
+
+                phaseTitleEl.textContent = phase.title;
+                phaseFocusEl.textContent = phase.focus;
+                workoutScheduleEl.innerHTML = '';
+                detailViewEl.classList.add('hidden');
+
+                Object.entries(phase.schedule).forEach(([day, data]) => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-50 p-4 rounded-lg shadow-sm cursor-pointer hover:shadow-md hover:bg-white transition-all';
+                    card.innerHTML = `
+                        <p class="font-bold text-gray-800">${day}</p>
+                        <p class="text-sm text-[#4682B4] font-semibold">${data.type}</p>
+                        <p class="text-xs text-gray-500 mt-1">Duración: ${data.duration}</p>
+                    `;
+                    card.addEventListener('click', () => {
+                         document.querySelectorAll('#workout-schedule > div').forEach(c => c.classList.remove('ring-2', 'ring-[#8A817C]'));
+                         card.classList.add('ring-2', 'ring-[#8A817C]');
+                         displayWorkoutDetail(data);
+                    });
+                    workoutScheduleEl.appendChild(card);
+                });
+
+                phaseButtons.forEach(btn => {
+                    if (btn.id === `btn-phase-${phaseId}`) {
+                        btn.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                        btn.classList.add('bg-[#8A817C]', 'text-white', 'hover:bg-[#6b625c]');
+                    } else {
+                        btn.classList.remove('bg-[#8A817C]', 'text-white', 'hover:bg-[#6b625c]');
+                        btn.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                    }
+                });
+            }
+
+            phaseButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const phaseId = parseInt(button.id.split('-')[2]);
+                    loadPhase(phaseId);
+                });
+            });
+
+            // Accordions
+            const postOpAccordionEl = document.getElementById('postOpAccordion');
+            workoutData.postOpGuidelines.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'border-b last:border-b-0';
+                div.innerHTML = `
+                    <button class="accordion-button w-full flex justify-between items-center text-left p-4 font-semibold text-gray-700 hover:bg-gray-50">
+                        <span>${item.phase}</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="px-4 pb-4 text-gray-600">
+                            <p><strong>Actividades:</strong> ${item.activities}</p>
+                            <p class="mt-2"><strong>Precauciones:</strong> ${item.precautions}</p>
+                        </div>
+                    </div>`;
+                postOpAccordionEl.appendChild(div);
+            });
+            
+            document.querySelectorAll('.accordion-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const content = button.nextElementSibling;
+                    button.classList.toggle('active');
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                });
+            });
+
+            // Progress Chart
+            const progressCtx = document.getElementById('progressChart').getContext('2d');
+            new Chart(progressCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Inicio', 'Sem 2', 'Sem 4', 'Sem 6', 'Sem 8', 'Sem 10', 'Sem 12'],
+                    datasets: [{
+                        label: 'Peso (kg)',
+                        data: [88.6, null, null, null, null, null, null],
+                        fill: true,
+                        backgroundColor: 'rgba(138, 129, 124, 0.1)',
+                        borderColor: '#8A817C',
+                        tension: 0.1,
+                        pointBackgroundColor: '#8A817C',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                     scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Peso (kg)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            loadPhase(1);
+        });
+
+    </script>
+</body>
+</html>
